@@ -3266,6 +3266,64 @@ class QueryFieldListTest(unittest.TestCase):
         ak = list(Bar.objects(foo__match={'shape': "square", "color": "purple"}))
         self.assertEqual([b1], ak)
 
+    def test_list_queries(self):
+        class Child(EmbeddedDocument):
+            value = StringField()
+
+        class Parent(Document):
+            connections = ListField(EmbeddedDocumentField(Child))
+
+        Parent.drop_collection()
+
+        p = Parent()
+        p.save()
+
+        p = Parent.objects()[0]
+        p.connections = []
+        p.save()
+
+        self.assertEqual(Parent.objects(connections=None).count(), 1)
+        self.assertEqual(Parent.objects(connections=[]).count(), 0)
+        self.assertEqual(Parent.objects(connections__ne=None).count(), 0)
+        self.assertEqual(Parent.objects(connections__ne=[]).count(), 1)
+
+        self.assertEqual(Parent.objects(connections__in=([], None)).count(), 1)
+
+        self.assertEqual(Parent.objects(connections__nin=([], None)).count(), 0)
+        self.assertEqual(Parent.objects(connections__not__in=([], None)).count(), 0)
+
+        self.assertEqual(Parent.objects(connections__size__gt=0).count(), 0)
+        self.assertEqual(Parent.objects(connections__size__ne=0).count(), 0)
+
+        p.connections = None
+        p.save()
+
+        self.assertEqual(Parent.objects(connections=None).count(), 1)
+        self.assertEqual(Parent.objects(connections=[]).count(), 0)
+        self.assertEqual(Parent.objects(connections__ne=None).count(), 0)
+        self.assertEqual(Parent.objects(connections__ne=[]).count(), 1)
+
+        self.assertEqual(Parent.objects(connections__in=([], None)).count(), 1)
+
+        self.assertEqual(Parent.objects(connections__nin=([], None)).count(), 0)
+        self.assertEqual(Parent.objects(connections__not__in=([], None)).count(), 0)
+
+        self.assertEqual(Parent.objects(connections__size__gt=0).count(), 0)
+        self.assertEqual(Parent.objects(connections__size__ne=0).count(), 0)
+
+        p.connections = [Child(value="foobar")]
+        p.save()
+
+        self.assertEqual(Parent.objects(connections=None).count(), 0)
+        self.assertEqual(Parent.objects(connections=[]).count(), 0)
+        self.assertEqual(Parent.objects(connections__ne=None).count(), 1)
+        self.assertEqual(Parent.objects(connections__ne=[]).count(), 1)
+
+        self.assertEqual(Parent.objects(connections__nin=([], None)).count(), 1)
+        self.assertEqual(Parent.objects(connections__not__in=([], None)).count(), 1)
+
+        self.assertEqual(Parent.objects(connections__size__gt=0).count(), 1)
+        self.assertEqual(Parent.objects(connections__size__ne=0).count(), 1)
 
 if __name__ == '__main__':
     unittest.main()
