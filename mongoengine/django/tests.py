@@ -10,6 +10,7 @@ class MongoTestCase(TestCase):
     """
     db_name = 'test_%s' % settings.MONGO_DATABASE_NAME
     def __init__(self, methodName='runtest'):
+        connection.disconnect()
         connect(self.db_name)
         super(MongoTestCase, self).__init__(methodName)
 
